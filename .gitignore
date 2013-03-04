@@ -1,0 +1,5 @@
+/*
+!.gitignore
+!/modules/
+/modules/*
+!/modules/bitpay/

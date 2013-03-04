@@ -1,4 +1,16 @@
 <?php
+function bplog($contents)
+{
+	$file = 'bplog.txt';
+	file_put_contents($file, date('m-d H:i:s').": ", FILE_APPEND);
+	if (is_array($contents))
+		file_put_contents($file, var_export($contents, true)."\n", FILE_APPEND);		
+	else if (is_object($contents))
+		file_put_contents($file, json_encode($contents)."\n", FILE_APPEND);
+	else
+		file_put_contents($file, $contents."\n", FILE_APPEND);
+}
+
 	class bitpay extends PaymentModule
 	{
 		private $_html = '';
@@ -161,7 +173,7 @@
 
 		public function execPayment($cart)
 		{
-			$currency = new Currency(1);
+			$currency = Currency::getCurrencyInstance((int)$cart->id_currency);
 
 			// create invoice
 			$options = $_POST;
