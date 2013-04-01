@@ -182,28 +182,15 @@ function bplog($contents)
 
 			$total = $cart->getOrderTotal(true);
 
-			$method = _PS_OS_PREPARATION_;
-
-			if ($cart->isVirtualCart())
-			{
-				$method = _PS_OS_PAYMENT_;
-			}
-
-			$this->validateOrder($cart->id, $method, $total, $this->displayName, NULL, NULL, $currency->id);
-			$order = new Order($this->currentOrder);
-
 			$options['notificationURL'] = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'modules/'.$this->name.'/ipn.php';
 			$options['redirectURL'] = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'order-confirmation.php?id_cart='.$cart->id.'&id_module='.$this->id.'&id_order='.$this->currentOrder;
-			$options['posData'] = '{"id_order": "' . $order->id . '"';
-			$options['posData'].= ', "cart_id": "' . $cart->id .'"';
-			$options['posData'].= ', "hash": "' . crypt(($order->id . $cart->id), Configuration::get('bitpay_APIKEY')) . '"';
+			$options['posData'] = '{"cart_id": "' . $cart->id . '"';
+			$options['posData'].= ', "hash": "' . crypt($cart->id, Configuration::get('bitpay_APIKEY')) . '"';
 			$options['posData'].= '}';
-			$options['orderID'] = $order->id;
+			$options['orderID'] = $cart->id;
 			$options['price'] = $total;
 			
-			$postOptions = array('orderID', 'itemDesc', 'itemCode', 'notificationEmail', 'notificationURL', 'redirectURL', 
-				'posData', 'price', 'currency', 'physical', 'fullNotifications', 'transactionSpeed', 'buyerName', 
-				'buyerAddress1', 'buyerAddress2', 'buyerCity', 'buyerState', 'buyerZip', 'buyerEmail', 'buyerPhone');
+			$postOptions = array('orderID', 'itemDesc', 'itemCode', 'notificationEmail', 'notificationURL', 'redirectURL', 'posData', 'price', 'currency', 'physical', 'fullNotifications', 'transactionSpeed', 'buyerName', 'buyerAddress1', 'buyerAddress2', 'buyerCity', 'buyerState', 'buyerZip', 'buyerEmail', 'buyerPhone');
 
 			foreach($postOptions as $o)
 			{
