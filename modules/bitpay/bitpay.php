@@ -25,7 +25,7 @@ class bitpay extends PaymentModule
     function __construct()
     {
       $this->name = 'bitpay';
-      $this->version = '0.2';
+      $this->version = '0.5';
       $this->author = 'BitPay';
       $this->className = 'bitpay';
       $this->currencies = true;
@@ -280,7 +280,7 @@ class bitpay extends PaymentModule
         'Content-Type: application/json',
         "Content-Length: $length",
         "Authorization: Basic $uname",
-        'X-BitPay-Plugin-Info: prestashop0.3',
+        'X-BitPay-Plugin-Info: prestashop0.5',
         );
 
       curl_setopt($curl, CURLOPT_PORT, 443);
@@ -305,8 +305,8 @@ class bitpay extends PaymentModule
       }
       curl_close($curl);
 
-      if($response['error']) {
-        bplog($response['error']);
+      if(array_key_exists('error', $response)) {
+        bplog(var_export($response['error'], true));
         die(Tools::displayError("Error occurred! (" . $response['error']['type'] . " - " . $response['error']['message'] . ")"));
         return false;
       } else if(!$response['url']) {
