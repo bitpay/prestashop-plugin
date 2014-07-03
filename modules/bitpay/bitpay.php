@@ -305,14 +305,27 @@ class bitpay extends PaymentModule
       }
       curl_close($curl);
 
-      if(array_key_exists('error', $response)) {
-        bplog(var_export($response['error'], true));
+      if(is_array($response) && array_key_exists('error', $response)) {
+
+        bplog('Error creating invoice: ' . var_export($response, true));
         die(Tools::displayError("Error occurred! (" . $response['error']['type'] . " - " . $response['error']['message'] . ")"));
         return false;
-      } else if(!$response['url']) {
-        die(Tools::displayError("Error: Response did not include invoice url!"));
-      } else {
+
+      } else if (!is_array($response)) {
+
+        bplog('Error creating invoice: ' . var_export($response, true));
+        die(Tools::displayError("Error occurred! There was a problem processing your payment: invalid response returned from gateway."));
+
+      } else if(is_array($response) && array_key_exists('url', $response)) {
+
         header('Location:  ' . $response['url']);
+
+      } else {
+        
+        // unknown problem
+        bplog('Error creating invoice: ' . var_export($invoice, true));
+        die(Tools::displayError("Error occurred! There was a problem processing your payment: unknown error or response."));
+
       }
     }
 
