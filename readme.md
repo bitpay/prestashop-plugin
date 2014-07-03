@@ -53,4 +53,6 @@ Configuration Instructions
 
 Tested with
 ------------
-+ PrestaShop v1.5.4.1 and 1.6.0.5
++ PrestaShop v1.5.4.1
++ PrestaShop v1.6.0.5
++ PrestaShop v1.6.0.8
