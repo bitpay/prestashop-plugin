@@ -25,7 +25,7 @@ class bitpay extends PaymentModule
     function __construct()
     {
       $this->name = 'bitpay';
-      $this->version = '0.2';
+      $this->version = '0.5';
       $this->author = 'BitPay';
       $this->className = 'bitpay';
       $this->currencies = true;
@@ -280,7 +280,7 @@ class bitpay extends PaymentModule
         'Content-Type: application/json',
         "Content-Length: $length",
         "Authorization: Basic $uname",
-        'X-BitPay-Plugin-Info: prestashop0.3',
+        'X-BitPay-Plugin-Info: prestashop0.5',
         );
 
       curl_setopt($curl, CURLOPT_PORT, 443);
@@ -305,14 +305,27 @@ class bitpay extends PaymentModule
       }
       curl_close($curl);
 
-      if($response['error']) {
-        bplog($response['error']);
+      if(is_array($response) && array_key_exists('error', $response)) {
+
+        bplog('Error creating invoice: ' . var_export($response, true));
         die(Tools::displayError("Error occurred! (" . $response['error']['type'] . " - " . $response['error']['message'] . ")"));
         return false;
-      } else if(!$response['url']) {
-        die(Tools::displayError("Error: Response did not include invoice url!"));
-      } else {
+
+      } else if (!is_array($response)) {
+
+        bplog('Error creating invoice: ' . var_export($response, true));
+        die(Tools::displayError("Error occurred! There was a problem processing your payment: invalid response returned from gateway."));
+
+      } else if(is_array($response) && array_key_exists('url', $response)) {
+
         header('Location:  ' . $response['url']);
+
+      } else {
+        
+        // unknown problem
+        bplog('Error creating invoice: ' . var_export($invoice, true));
+        die(Tools::displayError("Error occurred! There was a problem processing your payment: unknown error or response."));
+
       }
     }
 
