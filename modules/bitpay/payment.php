@@ -29,8 +29,9 @@ include(dirname(__FILE__).'/../../header.php');
 include(dirname(__FILE__).'/bitpay.php');
 
 $bitpay = new bitpay();
-echo $bitpay->execPayment($cart);
+// echo $bitpay->execPayment($cart);
 
+Tools::redirect(Context::getContext()->link->getModuleLink('bitpay', 'payment'));
 include_once(dirname(__FILE__).'/../../footer.php');
 
 ?>

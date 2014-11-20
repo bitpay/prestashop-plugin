@@ -1,5 +1,6 @@
 <?php
 
+require('psysh');
 /**
  * The MIT License (MIT)
  * 
@@ -57,6 +58,10 @@ class bitpay extends PaymentModule {
       $this->currencies_mode = 'checkbox';
       $this->tab             = 'payments_gateways';
       $this->bitpayurl       = $bitpayurl;
+      $this->apiurl          = $apiurl;
+      $this->sslport         = $sslport;
+      $this->verifypeer      = $verifypeer;
+      $this->verifyhost      = $verifyhost;
       if (_PS_VERSION_ > '1.5')
       $this->controllers = array('payment', 'validation');
 
@@ -97,6 +102,9 @@ class bitpay extends PaymentModule {
                 UNIQUE KEY `invoice_id` (`invoice_id`)
                 ) ENGINE="._MYSQL_ENGINE_.' DEFAULT CHARSET=utf8';
 
+      $db->Execute($query);
+      $query = "INSERT IGNORE INTO `ps_configuration` (`name`, `value`, `date_add`, `date_upd`) VALUES
+('PS_OS_BITPAY', '13', NOW(), NOW());";
       $db->Execute($query);
 
       return true;
@@ -244,11 +252,11 @@ class bitpay extends PaymentModule {
       $total                       = $cart->getOrderTotal(true);
       
       $options['notificationURL']  = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'modules/'.$this->name.'/ipn.php';
-
       if (_PS_VERSION_ <= '1.5')
         $options['redirectURL']    = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'order-confirmation.php?id_cart='.$cart->id.'&id_module='.$this->id.'&id_order='.$this->currentOrder;
       else
-        $options['redirectURL']    = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->id.'&id_order='.$this->currentOrder;
+        $options['redirectURL']    = Context::getContext()->link->getModuleLink('bitpay', 'validation');
+        //$options['redirectURL']    = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->id;
 
       $options['posData']          = '{"cart_id": "' . $cart->id . '"';
       $options['posData']         .= ', "hash": "' . crypt($cart->id, Configuration::get('bitpay_APIKEY')) . '"';
@@ -277,35 +285,8 @@ class bitpay extends PaymentModule {
         $post = rmJSONencode($post);
 
       // Call BitPay
-      $curl   = curl_init($this->bitpayurl.'/api/invoice/');
-      $length = 0;
-
-      if ($post) {
-        curl_setopt($curl, CURLOPT_POST, 1);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $post);
-
-        $length = strlen($post);
-      }
-
-      $uname  = base64_encode(Configuration::get('bitpay_APIKEY'));
-      $header = array(
-                      'Content-Type: application/json',
-                      'Content-Length: ' . $length,
-                      'Authorization: Basic ' . $uname,
-                      'X-BitPay-Plugin-Info: prestashop0.4',
-                     );
-
-      curl_setopt($curl, CURLOPT_PORT, 443);
-      curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-      curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC ) ;
-      curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 1); // verify certificate
-      curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2); // check existence of CN and verify that it matches hostname
-      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-      curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
-      curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
-
-      $responseString = curl_exec($curl);
+      $curl = curl_init($this->apiurl.'/api/invoice/');
+      $responseString = $this->makeCurlCall($post, $curl);
 
       if(!$responseString) {
         $response = curl_error($curl);
@@ -367,14 +348,14 @@ class bitpay extends PaymentModule {
       return $this->display(__FILE__, 'invoice_block.tpl');
     }
 
-    public function hookpaymentReturn($params) {
+    public function hookPaymentReturn($params) {
       global $smarty;
 
       $smarty->assign(array(
                             'this_path'     => $this->_path,
                             'this_path_ssl' => Configuration::get('PS_FO_PROTOCOL').$_SERVER['HTTP_HOST'].__PS_BASE_URI__."modules/{$this->name}/"));
 
-      return $this->display(__FILE__, 'complete.tpl');
+      return $this->display(__FILE__, 'payment_return.tpl');
     }
     
     public function rmJSONdecode($jsondata) {
@@ -546,5 +527,36 @@ class bitpay extends PaymentModule {
     }
 
 
+    private function makeCurlCall($post, $curl) {
+      $length = 0;
+
+      if ($post) {
+        curl_setopt($curl, CURLOPT_POST, 1);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $post);
+
+        $length = strlen($post);
+      }
+
+      $uname  = base64_encode(Configuration::get('bitpay_APIKEY'));
+      $header = array(
+                      'Content-Type: application/json',
+                      'Content-Length: ' . $length,
+                      'Authorization: Basic ' . $uname,
+                      'X-BitPay-Plugin-Info: prestashop0.4',
+                     );
+
+      curl_setopt($curl, CURLOPT_PORT, $this->sslport);
+      curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+      curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC ) ;
+      curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->verifypeer); // verify certificate (1)
+      curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->verifyhost); // check existence of CN and verify that it matches hostname (2)
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+      curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+      curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+      
+      return curl_exec($curl);
+    }
   }
+
 ?>
