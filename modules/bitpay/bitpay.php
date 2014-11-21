@@ -1,6 +1,5 @@
 <?php
 
-require('psysh');
 /**
  * The MIT License (MIT)
  * 
@@ -350,8 +349,19 @@ class bitpay extends PaymentModule {
 
     public function hookPaymentReturn($params) {
       global $smarty;
+      
+      $order = ($params['objOrder']);
+      $state = $order->current_state;
 
+      /*
+      echo "<pre>"; 
+        print_r($order);
+      echo "<\pre>"; 
+        
+      die();
+       */
       $smarty->assign(array(
+                            'state'         => $state,
                             'this_path'     => $this->_path,
                             'this_path_ssl' => Configuration::get('PS_FO_PROTOCOL').$_SERVER['HTTP_HOST'].__PS_BASE_URI__."modules/{$this->name}/"));
 
