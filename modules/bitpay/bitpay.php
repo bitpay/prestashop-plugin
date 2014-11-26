@@ -285,7 +285,36 @@ class bitpay extends PaymentModule {
 
       // Call BitPay
       $curl = curl_init($this->apiurl.'/api/invoice/');
-      $responseString = $this->makeCurlCall($post, $curl);
+      $length = 0;
+
+      if ($post) {
+        curl_setopt($curl, CURLOPT_POST, 1);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $post);
+
+        $length = strlen($post);
+      }
+
+      $uname  = base64_encode(Configuration::get('bitpay_APIKEY'));
+      $header = array(
+                      'Content-Type: application/json',
+                      'Content-Length: ' . $length,
+                      'Authorization: Basic ' . $uname,
+                      'X-BitPay-Plugin-Info: prestashop0.4',
+                     );
+
+      curl_setopt($curl, CURLINFO_HEADER_OUT, true);
+      curl_setopt($curl, CURLOPT_PORT, $this->sslport);
+      curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+      curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC ) ;
+      curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->verifypeer); // verify certificate (1)
+      curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->verifyhost); // check existence of CN and verify that it matches hostname (2)
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+      curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+      curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+      
+
+      $responseString = curl_exec($curl);
 
       if(!$responseString) {
         $response = curl_error($curl);
@@ -330,6 +359,10 @@ class bitpay extends PaymentModule {
     public function hookInvoice($params) {
       global $smarty;
 
+      echo "<pre>"; 
+        print_r($params);
+      echo "<\pre>"; 
+        
       $id_order = $params['id_order'];
 
       $bitcoinpaymentdetails = $this->readBitcoinpaymentdetails($id_order);
@@ -353,13 +386,6 @@ class bitpay extends PaymentModule {
       $order = ($params['objOrder']);
       $state = $order->current_state;
 
-      /*
-      echo "<pre>"; 
-        print_r($order);
-      echo "<\pre>"; 
-        
-      die();
-       */
       $smarty->assign(array(
                             'state'         => $state,
                             'this_path'     => $this->_path,

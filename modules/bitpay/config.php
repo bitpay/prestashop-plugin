@@ -1,9 +1,9 @@
 <?php
 
   // $bitpayurl = "https://bitpay.com"
-  $bitpayurl = "https://paul.bp:8088";
-  $apiurl = "https://paul.bp";
+  $bitpayurl = "https://test.bitpay.com";
+  $apiurl = $bitpayurl;
   $sslport = 8088;
-  $verifypeer = false;
-  $verifyhost = false;
+  $verifypeer = 1;
+  $verifyhost = 2;
 ?>

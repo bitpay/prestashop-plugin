@@ -32,14 +32,18 @@
 	$jsonInput = fgets($handle);
 	
 	if(function_exists('json_decode'))
+  {
 		$decoded = json_decode($jsonInput, true);
+  }
 	else
 		$decoded = rmJSONdecode($jsonInput);
 
 	fclose($handle);
 
 	if(function_exists('json_decode'))
+  {
 		$posData = json_decode($decoded['posData']);
+  }
 	else
 		$posData = rmJSONdecode($decoded['posData']);
 	
@@ -52,7 +56,12 @@
 			if (empty(Context::getContext()->link))
 				Context::getContext()->link = new Link(); // workaround a prestashop bug so email is sent 
 			$key = $posData->key;
-			$bitpay->validateOrder($posData->cart_id, Configuration::get('PS_OS_PAYMENT'), $decoded['price'], $bitpay->displayName, null, array(), null, false, $key);
+      $order = new Order((int)Order::getOrderByCartId($posData->cart_id));
+      $new_history = new OrderHistory();
+      $new_history->id_order = (int)$order->id;
+      $order_status = (int)Configuration::get('PS_OS_PAYMENT');
+      $new_history->changeIdOrderState((int)$order_status, $order, true);
+      $new_history->addWithemail(true);
 		}
 		$bitpay->writeDetails($bitpay->currentOrder, $posData->cart_id, $decoded['id'], $decoded['status']);
 		
