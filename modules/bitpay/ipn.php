@@ -47,21 +47,28 @@
 	else
 		$posData = rmJSONdecode($decoded['posData']);
 	
+  $order = (int)Order::getOrderByCartId($posData->cart_id);
 	if ($posData->hash == crypt($posData->cart_id, Configuration::get('bitpay_APIKEY')))
 	{	
 		$bitpay = new bitpay();		
 		
 		if (in_array($decoded['status'], array('paid', 'confirmed', 'complete')))
 		{
-			if (empty(Context::getContext()->link))
-				Context::getContext()->link = new Link(); // workaround a prestashop bug so email is sent 
-			$key = $posData->key;
-      $order = new Order((int)Order::getOrderByCartId($posData->cart_id));
-      $new_history = new OrderHistory();
-      $new_history->id_order = (int)$order->id;
-      $order_status = (int)Configuration::get('PS_OS_PAYMENT');
-      $new_history->changeIdOrderState((int)$order_status, $order, true);
-      $new_history->addWithemail(true);
+      if ($order == 0){
+        $key = $posData->key;
+        $bitpay->validateOrder($posData->cart_id, Configuration::get('PS_OS_PAYMENT'), $decoded['price'], $bitpay->displayName, null, array(), null, false, $key);
+      }
+      else {
+        if (empty(Context::getContext()->link))
+          Context::getContext()->link = new Link(); // workaround a prestashop bug so email is sent 
+        $key = $posData->key;
+        $order = new Order((int)Order::getOrderByCartId($posData->cart_id));
+        $new_history = new OrderHistory();
+        $new_history->id_order = (int)$order->id;
+        $order_status = (int)Configuration::get('PS_OS_PAYMENT');
+        $new_history->changeIdOrderState((int)$order_status, $order, true);
+        $new_history->addWithemail(true);
+      }
 		}
 		$bitpay->writeDetails($bitpay->currentOrder, $posData->cart_id, $decoded['id'], $decoded['status']);
 		

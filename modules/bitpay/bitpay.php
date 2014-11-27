@@ -102,8 +102,7 @@ class bitpay extends PaymentModule {
                 ) ENGINE="._MYSQL_ENGINE_.' DEFAULT CHARSET=utf8';
 
       $db->Execute($query);
-      $query = "INSERT IGNORE INTO `ps_configuration` (`name`, `value`, `date_add`, `date_upd`) VALUES
-('PS_OS_BITPAY', '13', NOW(), NOW());";
+      $query = "INSERT IGNORE INTO `ps_configuration` (`name`, `value`, `date_add`, `date_upd`) VALUES ('PS_OS_BITPAY', '13', NOW(), NOW());";
       $db->Execute($query);
 
       return true;
@@ -265,6 +264,7 @@ class bitpay extends PaymentModule {
       $options['posData']         .= ', "key": "' . $this->key . '"}';
       $options['orderID']          = $cart->id;
       $options['price']            = $total;
+      $options['fullNotifications'] = true;
 
       $postOptions                 = array('orderID', 'itemDesc', 'itemCode', 
                                            'notificationEmail', 'notificationURL', 'redirectURL', 
@@ -331,7 +331,7 @@ class bitpay extends PaymentModule {
 
       curl_close($curl);
 
-      if($response['error']) {
+      if(isset($response['error'])) {
         bplog($response['error']);
 
         die(Tools::displayError("Error occurred! (" . $response['error']['type'] . " - " . $response['error']['message'] . ")"));
@@ -347,7 +347,7 @@ class bitpay extends PaymentModule {
       $invoice_id = stripslashes(str_replace("'", '', $invoice_id));
       $status = stripslashes(str_replace("'", '', $status));
       $db = Db::getInstance();
-      $result = $db->Execute('INSERT INTO `' . _DB_PREFIX_ . 'order_bitcoin` (`id_order`, `cart_id`, `invoice_id`, `status`) VALUES(' . intval($id_order) . ', ' . intval($cart_id) . ', "' . $invoice_id . '", "' . $status . '")');
+      $result = $db->Execute('INSERT INTO `' . _DB_PREFIX_ . 'order_bitcoin` (`id_order`, `cart_id`, `invoice_id`, `status`) VALUES(' . intval($id_order) . ', ' . intval($cart_id) . ', "' . $invoice_id . '", "' . $status . '") on duplicate key update `status`="'.$status.'"');
     }
 
     public function readBitcoinpaymentdetails($id_order) {
@@ -359,9 +359,7 @@ class bitpay extends PaymentModule {
     public function hookInvoice($params) {
       global $smarty;
 
-      echo "<pre>"; 
-        print_r($params);
-      echo "<\pre>"; 
+        //var_dump($params);
         
       $id_order = $params['id_order'];
 
