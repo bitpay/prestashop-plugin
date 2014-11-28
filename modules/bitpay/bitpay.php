@@ -254,7 +254,6 @@ class bitpay extends PaymentModule {
         $options['redirectURL']    = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'order-confirmation.php?id_cart='.$cart->id.'&id_module='.$this->id.'&id_order='.$this->currentOrder;
       else
         $options['redirectURL']    = Context::getContext()->link->getModuleLink('bitpay', 'validation');
-        //$options['redirectURL']    = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->id;
 
       $options['posData']          = '{"cart_id": "' . $cart->id . '"';
       $options['posData']         .= ', "hash": "' . crypt($cart->id, Configuration::get('bitpay_APIKEY')) . '"';
@@ -359,8 +358,6 @@ class bitpay extends PaymentModule {
     public function hookInvoice($params) {
       global $smarty;
 
-        //var_dump($params);
-        
       $id_order = $params['id_order'];
 
       $bitcoinpaymentdetails = $this->readBitcoinpaymentdetails($id_order);
