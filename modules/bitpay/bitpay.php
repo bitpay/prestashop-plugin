@@ -84,6 +84,13 @@ class bitpay extends PaymentModule {
         $this->_errors[] = $this->l('Sorry, this module requires the cURL PHP extension but it is not enabled on your server.  Please ask your web hosting provider for assistance.');
         return false;
       }
+      
+      // On Ubuntu, you need the php5-json package
+      if(!function_exists('json_encode'))
+      {
+        $this->_errors[] = $this->l('Sorry, this module requires the json PHP extension but it is not enabled on your server.  Please ask your web hosting provider for assistance.');
+        return false;
+      }
 
       if (!parent::install() || !$this->registerHook('invoice') || !$this->registerHook('payment') || !$this->registerHook('paymentReturn')) {
         return false;
